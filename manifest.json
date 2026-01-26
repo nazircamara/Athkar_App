@@ -1,0 +1,19 @@
+{
+    "name": "Athkar App",
+    "short_name": "Athkar",
+    "description": "Daily Athkar with offline audio playback.",
+    "start_url": "/index.html",
+    "scope": "/",
+    "display": "standalone",
+    "theme_color": "#6366f1",
+    "background_color": "#f8fafc",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
