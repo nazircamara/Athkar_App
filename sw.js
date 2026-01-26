@@ -3,11 +3,11 @@ const APP_CACHE = `athkar-ui-${VERSION}`;
 const AUDIO_CACHE = `athkar-audio-${VERSION}`;
 
 const UI_ASSETS = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/app.js',
-    '/manifest.json'
+    './',
+    './index.html',
+    './style.css',
+    './app.js',
+    './manifest.json'
 ];
 
 self.addEventListener('install', event => {
@@ -33,7 +33,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('message', event => {
     const data = event.data || {};
     if (data.type === 'CACHE_AUDIO' && data.url) {
-        const audioUrl = new URL(data.url, self.location.origin);
+        const audioUrl = new URL(data.url, self.registration.scope);
         if (audioUrl.origin !== self.location.origin) return;
 
         event.waitUntil(
@@ -57,7 +57,7 @@ self.addEventListener('fetch', event => {
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
 
-    const isAudio = url.pathname.startsWith('/audios/') || url.pathname.startsWith('/audios2/');
+    const isAudio = url.pathname.includes('/audios/') || url.pathname.includes('/audios2/');
     const isUI = request.mode === 'navigate' || ['style', 'script', 'document'].includes(request.destination);
 
     if (isAudio) {
