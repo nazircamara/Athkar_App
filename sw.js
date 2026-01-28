@@ -38,8 +38,6 @@ self.addEventListener('message', event => {
 
         event.waitUntil(
             caches.open(AUDIO_CACHE).then(async cache => {
-                const cached = await cache.match(audioUrl.href);
-                if (cached) return;
                 const request = new Request(audioUrl.href, { cache: 'reload' });
                 const response = await fetch(request);
                 if (response && response.ok) {
@@ -57,8 +55,9 @@ self.addEventListener('fetch', event => {
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
 
-    const isAudio = url.pathname.includes('/audios/') || url.pathname.includes('/audios2/');
-    const isUI = request.mode === 'navigate' || ['style', 'script', 'document'].includes(request.destination);
+    const isAudio = url.pathname.includes('/audios/');
+    const isNavigation = request.mode === 'navigate' || request.destination === 'document';
+    const isUI = isNavigation || ['style', 'script'].includes(request.destination);
 
     if (isAudio) {
         event.respondWith(cacheFirstAudio(request));
@@ -66,14 +65,15 @@ self.addEventListener('fetch', event => {
     }
 
     if (isUI) {
-        event.respondWith(staleWhileRevalidate(request));
+        event.respondWith(staleWhileRevalidate(request, isNavigation));
         return;
     }
 });
 
-async function staleWhileRevalidate(request) {
+async function staleWhileRevalidate(request, isNavigation = false) {
     const cache = await caches.open(APP_CACHE);
     const cachedResponse = await cache.match(request);
+    const offlineFallback = isNavigation ? await cache.match('./index.html') : undefined;
 
     const networkPromise = fetch(request)
         .then(response => {
@@ -82,9 +82,9 @@ async function staleWhileRevalidate(request) {
             }
             return response;
         })
-        .catch(() => cachedResponse);
+        .catch(() => cachedResponse || offlineFallback);
 
-    return cachedResponse || networkPromise;
+    return cachedResponse || offlineFallback || networkPromise;
 }
 
 async function cacheFirstAudio(request) {

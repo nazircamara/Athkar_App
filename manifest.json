@@ -2,7 +2,7 @@
     "name": "Athkar App",
     "short_name": "Athkar",
     "description": "Daily Athkar with offline audio playback.",
-    "start_url": "./index.html",
+    "start_url": "./",
     "scope": "./",
     "display": "standalone",
     "theme_color": "#6366f1",
