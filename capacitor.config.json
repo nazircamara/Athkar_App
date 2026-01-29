@@ -1,0 +1,11 @@
+{
+  "appId": "com.nazir.athkar",
+  "appName": "Athkar",
+  "webDir": "www",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 3000,
+      "launchAutoHide": true
+    }
+  }
+}

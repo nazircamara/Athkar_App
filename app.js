@@ -290,8 +290,6 @@ function handleAudio(src, btn) {
     const isSecondary = btn.getAttribute('data-type') === 'secondary' || btn.innerText.includes('🎧');
     const playIcon = isSecondary ? "🎧" : "🔊";
     const cleanListenText = `${playIcon} ${translations[currentLang].listen}`;
-
-    requestAudioCache(src);
     
     if (activeAudio) {
         activeAudio.pause();
@@ -313,6 +311,7 @@ function handleAudio(src, btn) {
     
     activeAudio = new Audio(src);
     btn.innerText = "⏳ " + translations[currentLang].loading;
+    cacheAudioAsset(src);
     
     activeAudio.play()
         .then(() => { 
@@ -329,13 +328,37 @@ function handleAudio(src, btn) {
     };
 }
 
-function requestAudioCache(src) {
+function cacheAudioAsset(src) {
+    if (!('serviceWorker' in navigator)) return;
+    const controller = navigator.serviceWorker.controller;
+    if (!controller) return;
+    controller.postMessage({ type: 'CACHE_AUDIO', url: src });
+}
+
+function cacheAllAudioAssets() {
     if (!('serviceWorker' in navigator)) return;
 
-    const controller = navigator.serviceWorker.controller;
-    if (controller) {
-        controller.postMessage({ type: 'CACHE_AUDIO', url: src });
-    }
+    const urls = new Set();
+    Object.values(translations).forEach(lang => {
+        Object.keys(lang).forEach(key => {
+            if (key.endsWith('_intro')) {
+                urls.add(lang[key]);
+            }
+        });
+    });
+
+    Object.values(database).forEach(list => {
+        list.forEach(item => {
+            if (item.audio) urls.add(item.audio);
+            if (item.audio2) urls.add(item.audio2);
+        });
+    });
+
+    navigator.serviceWorker.ready.then(reg => {
+        if (!reg.active) return;
+        reg.active.postMessage({ type: 'CACHE_AUDIO_LIST', urls: Array.from(urls) });
+        localStorage.setItem('offline_audio_cached', 'true');
+    });
 }
 
 function showMainMenu() {
@@ -376,13 +399,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeBtn) {
         changeLanguage(currentLang, activeBtn);
     }
+
+    // 3. Register Service Worker for offline support
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {
+            // Silent fail; app still works without SW in native shell.
+        });
+    }
+
+    // 4. Cache all audio for full offline use (first run only)
+    if (!localStorage.getItem('offline_audio_cached')) {
+        cacheAllAudioAssets();
+    }
 });
 
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .catch(error => {
-                console.error('Service worker registration failed:', error);
-            });
-    });
-}

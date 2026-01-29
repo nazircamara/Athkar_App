@@ -7,7 +7,9 @@ const UI_ASSETS = [
     './index.html',
     './style.css',
     './app.js',
-    './manifest.json'
+    './manifest.json',
+    './icon.jpg',
+    './icon.png'
 ];
 
 self.addEventListener('install', event => {
@@ -42,6 +44,30 @@ self.addEventListener('message', event => {
                 const response = await fetch(request);
                 if (response && response.ok) {
                     await cache.put(audioUrl.href, response.clone());
+                }
+            })
+        );
+    }
+
+    if (data.type === 'CACHE_AUDIO_LIST' && Array.isArray(data.urls)) {
+        const urls = data.urls
+            .filter(Boolean)
+            .map(url => new URL(url, self.registration.scope))
+            .filter(url => url.origin === self.location.origin)
+            .map(url => url.href);
+
+        event.waitUntil(
+            caches.open(AUDIO_CACHE).then(async cache => {
+                for (const href of urls) {
+                    try {
+                        const request = new Request(href, { cache: 'reload' });
+                        const response = await fetch(request);
+                        if (response && response.ok) {
+                            await cache.put(href, response.clone());
+                        }
+                    } catch {
+                        // Skip failures; remaining assets still cache.
+                    }
                 }
             })
         );
